@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const axios  = require('axios');
+const cookie = require('cookie');
 
 router.post('/register', function (req, res, next) {
     const newUser = req.body;
@@ -53,11 +55,22 @@ router.post('/login', function (req, res, next) {
             return res.status(401).json({ error: `The email doesn't exist in our database, create an account by clicking "Create Account"` })
         }
 
-        const user = userResult[0];
+        const user = userResult[0];       
         if (password !== user.passwordHash) {
             return res.status(401).json({ error: `The password is incorrect.` })
         }
         delete userResult[0].passwordHash
+
+        const userInfoForCookie = {
+            idUser: user.idUser,
+            email: user.email
+        };
+        const cookieOptions = {
+            httpOnly: true
+        }
+
+        const cookieValue = cookie.serialize('userInfo', JSON.stringify(userInfoForCookie), cookieOptions);
+        res.setHeader('Set-Cookie', cookieValue);
         return res.status(200).json(userResult[0])
     });
 })

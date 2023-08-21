@@ -14,7 +14,7 @@ router.post('/register', function (req, res, next) {
         newUser.city,
         newUser.zip,
         newUser.shippingAddress,
-        newUser.passwordHash,
+        newUser.password,
         newUser.role
     ];
 
@@ -25,7 +25,7 @@ router.post('/register', function (req, res, next) {
         }
 
         if (existingEmailResults.length > 0) {
-            return res.status(400).send({ error: "Email already exists" });
+            return res.status(409).json({ error: "Email already exists" });
         }
 
         db.query(queryAddUser, values, (err, results) => {
@@ -40,7 +40,7 @@ router.post('/register', function (req, res, next) {
 });
 
 router.post('/login', function (req, res, next) {
-    const { email, passwordHash } = req.body;
+    const { email, password } = req.body;
 
     const query = 'SELECT * FROM user WHERE email = ?'
 
@@ -54,11 +54,11 @@ router.post('/login', function (req, res, next) {
         }
 
         const user = userResult[0];
-        if (passwordHash !== user.passwordHash) {
+        if (password !== user.passwordHash) {
             return res.status(401).json({ error: `The password is incorrect.` })
         }
-
-        return res.status(200).json({ msg: `Access granted` })
+        delete userResult[0].passwordHash
+        return res.status(200).json(userResult[0])
     });
 })
 

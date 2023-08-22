@@ -1,15 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const cookie = require('cookie');
+const sessionToken = require('../session') //fwejksmfnstnfm,zsfsd
 
 router.get('/', function (req, res, next) {
     const query = 'SELECT * FROM categories';
 
     db.query(query, (err, results) => {
+        const sessionCookie = req.cookies.sessionId; //null
         if (err) {
             console.error('Query Error: ', err);
             return res.status(500).send('Query Error');
         }
+
+        if (sessionCookie !== sessionToken) {
+            return res.status(401).send('Not authorized')
+        }
+
         return res.status(200).send(results);
     });
 });

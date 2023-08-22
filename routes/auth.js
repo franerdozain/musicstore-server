@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const axios  = require('axios');
 const cookie = require('cookie');
+const sessionToken = require('../session');
 
 router.post('/register', function (req, res, next) {
     const newUser = req.body;
@@ -60,21 +60,14 @@ router.post('/login', function (req, res, next) {
             return res.status(401).json({ error: `The password is incorrect.` })
         }
         delete userResult[0].passwordHash
-
-        const userInfoForCookie = {
-            idUser: user.idUser,
-            email: user.email
-        };
-        const cookieOptions = {
-            httpOnly: true
-        }
-
-        const cookieValue = cookie.serialize('userInfo', JSON.stringify(userInfoForCookie), cookieOptions);
-        res.setHeader('Set-Cookie', cookieValue);
+        
+        res.cookie('sessionId', sessionToken)
         return res.status(200).json(userResult[0])
     });
-})
+});
 
 
+
+// in logout --> res.cookie('sessionId', null)
 
 module.exports = router;

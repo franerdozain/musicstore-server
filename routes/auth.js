@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const cookie = require('cookie');
 const sessionToken = require('../session');
 
 router.post('/register', function (req, res, next) {
@@ -65,8 +64,6 @@ router.post('/login', function (req, res, next) {
         return res.status(200).json(userResult[0])
     });
 });
-
-
 
 // in logout --> res.cookie('sessionId', null)
 

@@ -2,40 +2,61 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const sessionToken = require('../session');
+const bcrypt = require('bcrypt');
 
 router.post('/register', function (req, res, next) {
     const newUser = req.body;
-    const queryCheckExistingEmail = 'SELECT email FROM user WHERE email = ?'
-    const queryAddUser = 'INSERT INTO user (username, email, country, state, city, zip, shippingAddress, passwordHash, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-    const values = [
-        newUser.username,
-        newUser.email,
-        newUser.country,
-        newUser.state,
-        newUser.city,
-        newUser.zip,
-        newUser.shippingAddress,
-        newUser.password,
-        newUser.role
-    ];
+    const queryCheckExistingEmail = 'SELECT email FROM user WHERE email = ?';
 
-    db.query(queryCheckExistingEmail, [newUser.email], (err, existingEmailResults) => {
-        if (err) {
-            console.error('Query error:', err);
-            return res.status(500).send('Query error');
+    db.query(queryCheckExistingEmail, [newUser.email], function (existingEmailError, existingEmailResults) {
+        if (existingEmailError) {
+            console.error('Error:', existingEmailError);
+            return res.status(500).json({ error: 'An error occurred' });
         }
 
         if (existingEmailResults.length > 0) {
             return res.status(409).json({ error: "Email already exists" });
         }
 
-        db.query(queryAddUser, values, (err, results) => {
-            if (err) {
-                console.error('Query error:', err);
-                return res.status(500).send('Query error');
+        next(); 
+    });
+}, function (req, res) {
+    const newUser = req.body;
+    const queryAddUser = 'INSERT INTO user (username, email, country, state, city, zip, shippingAddress, passwordHash, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+
+    const saltRounds = 10;
+    bcrypt.genSalt(saltRounds, function (saltError, salt) {
+        if (saltError) {
+            console.error('Error:', saltError);
+            return res.status(500).json({ error: 'An error occurred' });
+        }
+
+        bcrypt.hash(newUser.password, salt, function (hashError, hash) {
+            if (hashError) {
+                console.error('Error:', hashError);
+                return res.status(500).json({ error: 'An error occurred' });
             }
 
-            res.send({ "Message": "New user registered successfully" });
+            newUser.password = hash;
+
+            db.query(queryAddUser, [
+                newUser.username,
+                newUser.email,
+                newUser.country,
+                newUser.state,
+                newUser.city,
+                newUser.zip,
+                newUser.shippingAddress,
+                newUser.password,
+                newUser.role
+            ], function (insertError) {
+                if (insertError) {
+                    console.error('Query error:', insertError);
+                    return res.status(500).send('Query error');
+                }
+
+                res.json({ message: "New user registered successfully" });
+            });
         });
     });
 });
@@ -54,14 +75,20 @@ router.post('/login', function (req, res, next) {
             return res.status(401).json({ error: `The email doesn't exist in our database, create an account by clicking "Create Account"` })
         }
 
-        const user = userResult[0];       
-        if (password !== user.passwordHash) {
-            return res.status(401).json({ error: `The password is incorrect.` })
-        }
-        delete userResult[0].passwordHash
-        
-        res.cookie('sessionId', sessionToken)
-        return res.status(200).json(userResult[0])
+        const user = userResult[0];
+        console.log("password", password, "user: ", user);
+
+        bcrypt.compare(password, user.passwordHash, (error,result) => {
+            if(error) {
+                return res.status(401).json({ error: `An error occurred` })                
+            }
+            if(!result) {
+                return res.status(401).json({error: `The password is incorrect`})
+            }
+            delete user.passwordHash
+            res.cookie('sessionId', sessionToken)
+            return res.status(200).json(user)
+          })
     });
 });
 

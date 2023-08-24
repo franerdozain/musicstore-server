@@ -8,6 +8,7 @@ const domain = 'sandboxeff597fa47714e8da2bf76b6fcee4028.mailgun.org';
 const mailgun = new Mailgun({ apiKey, domain });
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET_KEY;
+const bcrypt = require('bcrypt');
 
 router.post('/', function (req, res, next) {
     const email = req.body.email;    
@@ -49,16 +50,31 @@ router.post('/', function (req, res, next) {
 router.patch('/new-password', function (req, res, next) {
   const {token, password} = req.body;
   const queryNewPassword = 'UPDATE user SET passwordHash = ? WHERE email = ?'
+  
   try {
     const decodedToken = jwt.verify(token, secretKey);
     const userEmail = decodedToken.email;
-   
-    db.query(queryNewPassword, [password, userEmail], async (error, updatePasswordResult) => {
-      if (error) {
-        return res.status(500).json({error: `An error occurred`});
-      }
-    })
+    const saltRounds = 10;
+    
+   bcrypt.genSalt(saltRounds, (error, salt) => {
+    if (error) {      
+      return res.status(500).json({ error: 'An error occurred' });
+    }
 
+    bcrypt.hash(password, salt, (error, hash) => {
+      if (error) {       
+        return res.status(500).json({ error: 'An error occurred' });
+      }
+      
+      db.query(queryNewPassword, [hash, userEmail], async (error, updatePasswordResult) => {
+        if (error) {
+          return res.status(500).json({error: `An error occurred`});
+        }
+        res.status(200).json({ message: 'Password updated successfully' });
+      })   
+    })
+   })
+   
   } catch (error) {
     console.error('Error decoding token:', error.message);
   }

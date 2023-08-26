@@ -1,18 +1,27 @@
-const db = require('./db')
+const db = require('./db');
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors');
+const session = require('express-session');
+const sessionKey = process.env.SESSION_KEY;
 
-const indexRouter = require('./routes/index');
 
 const app = express();
 
+app.use(session({
+    secret: sessionKey,
+    resave: false,
+    saveUninitialized: false,
+    maxAge: 1 * 60 * 1000,
+    unset: 'destroy'
+}));
+
 app.use(cors({
     origin: "http://localhost:3000",
-    credentials: true, // Enables sending cookies and other credentials
-  }));
+    credentials: true, 
+}));
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -20,6 +29,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
+const indexRouter = require('./routes/index');
 app.use('/', indexRouter);
 
 const port = process.env.PORT || 4000;

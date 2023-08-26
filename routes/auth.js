@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const sessionToken = require('../session');
+// const sessionToken = require('../session');
 const bcrypt = require('bcrypt');
 
 router.post('/register', function (req, res, next) {
@@ -76,22 +76,29 @@ router.post('/login', function (req, res, next) {
         }
 
         const user = userResult[0];
-        console.log("password", password, "user: ", user);
 
         bcrypt.compare(password, user.passwordHash, (error,result) => {
             if(error) {
                 return res.status(401).json({ error: `An error occurred` })                
             }
-            if(!result) {
+            if(!result) {               
                 return res.status(401).json({error: `The password is incorrect`})
             }
             delete user.passwordHash
-            res.cookie('sessionId', sessionToken)
+            // res.cookie('sessionId', sessionToken)            
+            req.session.userId = user.idUser;
             return res.status(200).json(user)
           })
     });
 });
 
-// in logout --> res.cookie('sessionId', null)
+router.get('/logout', function (req, res) {
+    req.session.destroy(function () {
+        req.session = null; 
+        res.clearCookie('connect.sid');
+        res.status(200).json({message: 'Logged out successfully'});
+    });
+});
+
 
 module.exports = router;

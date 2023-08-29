@@ -9,6 +9,7 @@ const sessionKey = process.env.SESSION_KEY;
 
 
 const app = express();
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
     secret: sessionKey,
@@ -26,8 +27,6 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
 
 const indexRouter = require('./routes/index');
 app.use('/', indexRouter);

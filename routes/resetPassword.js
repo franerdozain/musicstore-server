@@ -77,6 +77,7 @@ router.patch('/new-password', function (req, res, next) {
    
   } catch (error) {
     console.error('Error decoding token:', error.message);
+    return res.status(498).json({error: 'Token Expired: Request New Reset Password Link'})
   }
 })
 

@@ -19,7 +19,7 @@ router.post('/', function (req, res, next) {
         }
         
         if (userResult.length === 0) {
-            return res.status(401).json({error: `The email doesn't exist in our database or has a typo` })
+            return res.status(401).json({notFound: `The email doesn't exist in our database or has a typo` })
         }
         
         const user = userResult[0];
@@ -41,7 +41,7 @@ router.post('/', function (req, res, next) {
             if (error) {
               console.error('Error sending email:', error);
             } else {
-              console.log('Email sent:', body);
+               return res.status(200).json({message: "An email with a link to recover your password was sent to your email account"})
             }
           }); 
     })

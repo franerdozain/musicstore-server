@@ -6,10 +6,13 @@ const logger = require('morgan');
 const cors = require('cors');
 const session = require('express-session');
 const sessionKey = process.env.SESSION_KEY;
-
+// const bodyParser = require('body-parser');
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
+
+// app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(bodyParser.json());
 
 app.use(session({
     secret: sessionKey,

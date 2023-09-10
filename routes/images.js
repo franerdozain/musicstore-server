@@ -1,8 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const multer = require('multer');
 
-router.get('/categories', function (req, res, next) {
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "public/images/uploadTest")
+    },
+    filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+            cb(null, `${uniqueSuffix}-${file.originalname}`);
+        }
+    })
+    
+const upload = multer({storage: storage})
+
+router.post('/categories/new', upload.array("images",15), function (req, res, next) {
+    console.log(req.body);
+})
+
+router.get('/categories', function (req, res, next) { 
     const query = `
         SELECT i.*, c.idCategoryParent FROM images AS i
         JOIN categories AS c ON i.idCategory = c.idCategory
@@ -13,7 +31,7 @@ router.get('/categories', function (req, res, next) {
             console.error('Query Error: ', err);
             return res.status(500).send('Query Error');
         }
-        return res.status(200).send(results);
+        return res.status(200).send(results); 
     });
 });
 
@@ -58,4 +76,6 @@ router.get('/category/:id', function (req, res, next) {
     });
 });
 
-module.exports = router;
+
+
+module.exports = {images: router, upload};

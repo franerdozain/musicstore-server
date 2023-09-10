@@ -10,12 +10,11 @@ router.post('/register', function (req, res, next) {
 
     db.query(queryCheckExistingEmail, [newUser.email], function (existingEmailError, existingEmailResults) {
         if (existingEmailError) {
-            console.error('Error:', existingEmailError);
             return res.status(500).json({ error: 'An error occurred' });
         }
 
         if (existingEmailResults.length > 0) {
-            return res.status(409).json({ error: "Email already exists" });
+            return res.status(409).json({ errorExistingEmail: "Email already exists" });
         }
 
         next(); 
@@ -55,7 +54,7 @@ router.post('/register', function (req, res, next) {
                     return res.status(500).send('Query error');
                 }
 
-                res.json({ message: "New user registered successfully" });
+                res.json({ message: `Welcome ${newUser.username}, your account were created successfully ` });
             });
         });
     });
@@ -72,7 +71,7 @@ router.post('/login', function (req, res, next) {
         }
 
         if (userResult.length === 0) {
-            return res.status(401).json({ error: `The email doesn't exist in our database, create an account by clicking "Create Account"` })
+            return res.status(401).json({ errorInexistentEmail: `The email doesn't exist in our database, create an account by clicking "Create Account"` })
         }
 
         const user = userResult[0];
@@ -82,7 +81,7 @@ router.post('/login', function (req, res, next) {
                 return res.status(401).json({ error: `An error occurred` })                
             }
             if(!result) {               
-                return res.status(401).json({error: `The password is incorrect`})
+                return res.status(401).json({errorWrongPassword: `The password is incorrect`})
             }
             delete user.passwordHash
             // res.cookie('sessionId', sessionToken)            

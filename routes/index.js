@@ -3,11 +3,11 @@ const router = express.Router();
 const categories = require('./categories')
 const users = require('./users')
 const auth = require('./auth');
-// const {images} = require('./images')
+const products = require('./products')
 const resetPassword = require('./resetPassword');
 
 router.use('/categories', categories)
-// router.use('/images', images)
+router.use('/products', products)
 router.use('/auth', auth)
 router.use('/reset', resetPassword)
 

@@ -41,7 +41,6 @@ db.connect((err) => {
         console.error('Database conection error: ', err);
     } else {
         console.log('Database succesfully conected ');
-
     }
 });
 

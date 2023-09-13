@@ -55,17 +55,19 @@ router.post('/new', upload.array('images', 8), function (req, res, next) {
     const newProduct = req.body;
     const specifications = [];
     const features = [];
-    let specOrFeatError = false;
     const productId = req.productId;
 
-    for (const key in newProduct) {
-        if (key.startsWith('specifications')) {
-            specifications.push(newProduct[key]);
-        } else if (key.startsWith('features')) {
-            features.push(newProduct[key]);
-        }
+    for (const key in newProduct) { 
+        if (typeof newProduct[key] === 'string' && newProduct[key] !== 'undefined' && newProduct[key] !== '') {
+            if (key.startsWith('specifications')) {
+                specifications.push(newProduct[key]);
+            } else if (key.startsWith('features')) {
+                features.push(newProduct[key]);
+            }            
+        }     
     }
-
+console.log("gohan", specifications);
+console.log("krilin", features)
   // for the specifications storing
     for (const specOrFeat of specifications) {
         const specQuery = 'INSERT INTO specificationsandfeatures (idProduct, specOrFeature, valueSpecOrFeature) VALUES (?, ?, ?)';

@@ -7,9 +7,14 @@ const path = require('path');
 const fs = require('fs');
 const upload = require('../utils/multerConfig');
 
+// first func: check if incoming product already exists in db (based on productName)
+// second func: insert incoming product in db
+// third func: insert product's specifications and/or features into their own table in db
+// fourth func: save product's images into /public/images/products and insert them in db
+
 router.post('/new', upload.array('images', 8), function (req, res, next) {
     const newProduct = req.body;
-    const images = req.files;
+    // const images = req.files;
 
     const checkProductQuery = 'SELECT * FROM product WHERE productName = ?';
     const checkProductyValues = [
@@ -28,7 +33,7 @@ router.post('/new', upload.array('images', 8), function (req, res, next) {
     });
 }, function (req, res, next) {
     const newProduct = req.body;
-    const images = req.files;
+    // const images = req.files;
 
     const productQuery = 'INSERT INTO product (productName, price, description, stock, brand, idCategory, slogan) VALUES (?, ?, ?, ?, ?, ?, ?)';
     const productValues = [
@@ -43,12 +48,12 @@ router.post('/new', upload.array('images', 8), function (req, res, next) {
 
     db.query(productQuery, productValues, (err, productResults) => {
         if (err) {
-            return res.status(500).json({errorStoringData: `There was an error storing ${newProduct.productName} product's data`});
+            return res.status(500).json({ errorStoringData: `There was an error storing ${newProduct.productName} product's data` });
         }
 
         const productId = productResults.insertId;
         req.productId = productId;
-        
+
         next();
     });
 }, function (req, res, next) {
@@ -57,78 +62,44 @@ router.post('/new', upload.array('images', 8), function (req, res, next) {
     const features = [];
     const productId = req.productId;
 
-    for (const key in newProduct) { 
+    for (const key in newProduct) {
         if (typeof newProduct[key] === 'string' && newProduct[key] !== 'undefined' && newProduct[key] !== '') {
             if (key.startsWith('specifications')) {
                 specifications.push(newProduct[key]);
             } else if (key.startsWith('features')) {
                 features.push(newProduct[key]);
-            }            
-        }     
-    }
-console.log("gohan", specifications);
-console.log("krilin", features)
-  // for the specifications storing
-    for (const specOrFeat of specifications) {
-        const specQuery = 'INSERT INTO specificationsandfeatures (idProduct, specOrFeature, valueSpecOrFeature) VALUES (?, ?, ?)';
-        const specValues = [
-            productId,
-            "Specification",
-            specOrFeat
-        ];
-    
-        db.query(specQuery, specValues, (err, results) => {
-            if (err) {
-                return res.status(500).json({errorStoringData: `There was an error storing ${newProduct.productName} product's data`});
             }
-    
-            const idSpecAndFeatures = results.insertId;
-    
-            const specAndFeaturesQuery = 'INSERT INTO productspecandfeature (idProduct, idSpecAndFeatures) VALUES (?, ?)';
-            const specAndFeaturesValues = [
-                productId,
-                idSpecAndFeatures
-            ];
-    
-            db.query(specAndFeaturesQuery, specAndFeaturesValues, (err, results) => {
-                if (err) {
-                    return res.status(500).json({errorStoringData: `There was an error storing ${newProduct.productName} product's data`});
-                }
-    
-            });
-        });
+        }
     }
 
-    // for the features storing (refator with specifications storing in 1)
-    for (const specOrFeat of features) {
-        const specQuery = 'INSERT INTO specificationsandfeatures (idProduct, specOrFeature, valueSpecOrFeature) VALUES (?, ?, ?)';
-        const specValues = [
-            productId,
-            "Feature",
-            specOrFeat
-        ];
-    
-        db.query(specQuery, specValues, (err, results) => {
-            if (err) {
-                return res.status(500).json({errorStoringData: `There was an error storing ${newProduct.productName} product's data`});
-            }
-    
-            const idSpecAndFeatures = results.insertId;
-    
-            const specAndFeaturesQuery = 'INSERT INTO productspecandfeature (idProduct, idSpecAndFeatures) VALUES (?, ?)';
-            const specAndFeaturesValues = [
-                productId,
-                idSpecAndFeatures
-            ];
-    
-            db.query(specAndFeaturesQuery, specAndFeaturesValues, (err, results) => {
-                if (err) {
-                    return res.status(500).json({errorStoringData: `There was an error storing ${newProduct.productName} product's data`});
-                }
-                next();
-            });
-        });
+    if (specifications.length === 0 && features.length === 0) {
+        return next();
     }
+
+    const specOrFeatValues = [];
+
+    specifications.forEach(spec => specOrFeatValues.push([productId, 'Specification', spec]));
+    features.forEach(feat => specOrFeatValues.push([productId, 'Feature', feat]));
+
+    const specQuery = 'INSERT INTO specificationsandfeatures (idProduct, specOrFeature, valueSpecOrFeature) VALUES ?';
+
+    db.query(specQuery, [specOrFeatValues], (err, results) => {
+        if (err) {
+            return res.status(500).json({ errorStoringData: `There was an error storing ${newProduct.productName} product's data` });
+        }
+
+        const idSpecAndFeatures = results.insertId;
+        const specAndFeaturesValues = specOrFeatValues.map(() => [productId, idSpecAndFeatures]);
+        const specAndFeaturesQuery = 'INSERT INTO productspecandfeature (idProduct, idSpecAndFeatures) VALUES ?';
+
+        db.query(specAndFeaturesQuery, [specAndFeaturesValues], (err, results) => {
+            if (err) {
+                return res.status(500).json({ errorStoringData: `There was an error storing ${newProduct.productName} product's data` });
+            }
+
+            next();
+        });
+    })
 }, function (req, res) {
     const images = req.files;
     const productId = req.productId;
@@ -149,7 +120,7 @@ console.log("krilin", features)
 
         db.query(newImageQuery, newImageValues, (err, results) => {
             if (err) {
-                return res.status(500).json({errorStoringImg: `There was an error storing ${newProduct.productName} product's images`});
+                return res.status(500).json({ errorStoringImg: `There was an error storing ${newProduct.productName} product's images` });
             }
         });
     }

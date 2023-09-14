@@ -9,12 +9,11 @@ const upload = require('../utils/multerConfig');
 
 // first func: check if incoming product already exists in db (based on productName)
 // second func: insert incoming product in db
-// third func: insert product's specifications and/or features into their own table in db
+// third func: insert product's specifications and features into their own table in db
 // fourth func: save product's images into /public/images/products and insert them in db
 
 router.post('/new', upload.array('images', 8), function (req, res, next) {
     const newProduct = req.body;
-    // const images = req.files;
 
     const checkProductQuery = 'SELECT * FROM product WHERE productName = ?';
     const checkProductyValues = [
@@ -33,7 +32,6 @@ router.post('/new', upload.array('images', 8), function (req, res, next) {
     });
 }, function (req, res, next) {
     const newProduct = req.body;
-    // const images = req.files;
 
     const productQuery = 'INSERT INTO product (productName, price, description, stock, brand, idCategory, slogan) VALUES (?, ?, ?, ?, ?, ?, ?)';
     const productValues = [
@@ -77,7 +75,6 @@ router.post('/new', upload.array('images', 8), function (req, res, next) {
     }
 
     const specOrFeatValues = [];
-
     specifications.forEach(spec => specOrFeatValues.push([productId, 'Specification', spec]));
     features.forEach(feat => specOrFeatValues.push([productId, 'Feature', feat]));
 
@@ -88,8 +85,15 @@ router.post('/new', upload.array('images', 8), function (req, res, next) {
             return res.status(500).json({ errorStoringData: `There was an error storing ${newProduct.productName} product's data` });
         }
 
-        const idSpecAndFeatures = results.insertId;
-        const specAndFeaturesValues = specOrFeatValues.map(() => [productId, idSpecAndFeatures]);
+        // obtain the first insertion
+        const insertedIds = results.insertId;
+
+        // incremente by 1 each id (without this every spec/feat gets the same id)
+        specOrFeatValues.forEach((row, index) => {
+            row[1] = insertedIds + index;
+        });
+
+        const specAndFeaturesValues = specOrFeatValues.map(([productId, idSpecAndFeatures]) => [productId, idSpecAndFeatures]);
         const specAndFeaturesQuery = 'INSERT INTO productspecandfeature (idProduct, idSpecAndFeatures) VALUES ?';
 
         db.query(specAndFeaturesQuery, [specAndFeaturesValues], (err, results) => {
@@ -99,7 +103,8 @@ router.post('/new', upload.array('images', 8), function (req, res, next) {
 
             next();
         });
-    })
+    });
+
 }, function (req, res) {
     const images = req.files;
     const productId = req.productId;

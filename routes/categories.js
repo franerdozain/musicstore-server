@@ -10,6 +10,7 @@ const subcategoriesImagePath = process.env.SUBCAT_IMAGE_PATH;
 const categoriesImagePath = process.env.CAT_IMAGE_PATH;
 const upload = require('../utils/multerConfig');
 
+// GET categories with images
 router.get('/all', function (req, res, next) { 
     const query = `
         SELECT i.*, c.idCategoryParent 
@@ -41,6 +42,28 @@ router.get('/all', function (req, res, next) {
     });
 });
 
+// GET categories data only
+router.get('/categoriesData', function (req, res, next) {     
+    const query = `
+        SELECT * 
+        FROM categories
+    `;
+
+    db.query(query, (err, categories) => {
+        if (err) {
+            console.error('Query Error: ', err);
+            return res.status(500).send('Query Error');
+        }
+
+        const response = {
+            categories: categories
+        };
+        
+        return res.status(200).send(response); 
+    });
+});
+
+// POST new category/subcategory
 router.post('/new', upload.single('images'), function (req, res, next) {
     const newCategory = req.body;
     const image = req.file;

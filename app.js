@@ -6,6 +6,8 @@ const logger = require('morgan');
 const cors = require('cors');
 const session = require('express-session');
 const sessionKey = process.env.SESSION_KEY;
+const allowedOrigin = process.env.ALLOWED_ORIGIN;
+const port = process.env.PORT;
 // const bodyParser = require('body-parser');
 
 const app = express();
@@ -24,7 +26,7 @@ app.use(session({
 }));
 
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: allowedOrigin,
     credentials: true, 
 }));
 app.use(logger('dev'));
@@ -34,8 +36,6 @@ app.use(cookieParser());
 
 const indexRouter = require('./routes/index');
 app.use('/', indexRouter);
-
-const port = process.env.PORT || 4000;
 
 db.connect((err) => {
     if (err) {

@@ -130,9 +130,9 @@ router.post('/new', upload.array('images', 8), function checkIfProductExists (re
 // get n products with/without sortBy 
 router.get('/list/:id', function (req, res, next) {
     const idCategory = req.params.id; 
-    const { limit, sortBy } = req.query;
+    const { limit, sortBy, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
 
-    // let sqlQuery = 'SELECT * FROM product WHERE idCategory = ?';
     let sqlQuery = `
     SELECT p.*, 
            (SELECT GROUP_CONCAT(imageURL) 
@@ -142,44 +142,55 @@ router.get('/list/:id', function (req, res, next) {
     WHERE p.idCategory = ?`;
 
     switch (sortBy) {
-        case 'new':
+        case 'New':
             sqlQuery += ' ORDER BY creationDate DESC'; 
             break;
-        case 'old':
+        case 'Old':
             sqlQuery += ' ORDER BY creationDate ASC'; 
             break;
-        case 'brand_az':
+        case 'Brand A-Z':
             sqlQuery += ' ORDER BY brand ASC'; 
             break;
-        case 'brand_za':
+        case 'Brand Z-A':
             sqlQuery += ' ORDER BY brand DESC'; 
             break;
-        case 'price_asc':
+        case 'Price Low to High':
             sqlQuery += ' ORDER BY price ASC'; 
             break;
-        case 'price_desc':
+        case 'Price High to Low':
             sqlQuery += ' ORDER BY price DESC'; 
             break;
     }
 
-    if (limit) {
-        sqlQuery += ` LIMIT ${parseInt(limit)}`;
-    }
-    
-    db.query(sqlQuery, [idCategory], (err, results) => {
+    let countQuery = 'SELECT COUNT(*) as totalCount FROM product WHERE idCategory = ?';
+
+    db.query(countQuery, [idCategory], (err, countResult) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-        const productsWithImages = results.map(product => {
-       
-            return {
-                ...product,
-                imageUrls: product.imageUrls ? product.imageUrls.split(',') : [] 
+    
+        const totalCount = countResult[0].totalCount;
+    
+        sqlQuery += ' LIMIT ? OFFSET ?';
+    
+        db.query(sqlQuery, [idCategory, parseInt(pageSize), offset], (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
             }
+            const productsWithImages = results.map(product => {
+                return {
+                    ...product,
+                    imageUrls: product.imageUrls ? product.imageUrls.split(',') : [] 
+                }
+            });
+    
+            const totalPages = Math.ceil(totalCount / pageSize);
+    
+            res.json({ products: productsWithImages, totalPages });
         });
-        res.json({ products: productsWithImages });
     });
-})
+});
+
 
 // get n products of all subcategories from a parent category, with/without sortBy 
 router.get('/list/allSubcategories', function (req, res, next) {

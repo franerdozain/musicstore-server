@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const upload = require('../utils/multerConfig');
 
-// store new product in db
+// store new product 
 router.post('/new', upload.array('images', 8), function checkIfProductExists(req, res, next) {
     const newProduct = req.body;
 
@@ -186,5 +186,61 @@ router.get('/list/:id', function (req, res, next) {
         });
     });
 });
+
+// get 1 product details
+router.get('/details/:id', function (req, res, next) {
+    const idProduct = parseInt(req.params.id);
+    const productDetailsQuery = `SELECT 
+    p.*,
+    GROUP_CONCAT(i.imageURL) as imageUrls,
+    sf.specOrFeature,
+    sf.valueSpecOrFeature
+FROM 
+    product p
+LEFT JOIN 
+    images i ON p.idProduct = i.idProduct
+LEFT JOIN 
+    specificationsandfeatures sf ON p.idProduct = sf.idProduct
+WHERE 
+    p.idProduct = ?
+GROUP BY 
+    p.idProduct, sf.specOrFeature, sf.valueSpecOrFeature;`;
+
+    db.query(productDetailsQuery, [idProduct], (err, results) => {
+        if (err) {
+            return res.status(500).json({ errorMessage: `There was an error reaching your product, try again in a moment` })
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ productNotFound: `We couldn't find your product now, please try again in a moment` })
+        }
+
+        const [productData] = results;
+               
+        const product = {
+            idProduct: productData.idProduct,
+            productName: productData.productName,
+            price: productData.price,
+            description: productData.description,
+            stock: productData.stock,
+            brand: productData.brand,
+            slogan: productData.slogan,
+            creationDate: productData.creationDate,
+            imageUrls: productData.imageUrls ? productData.imageUrls.split(',') : [],
+            specifications: [],
+            features: []
+        };
+                
+        results.forEach(result => {
+            if (result.specOrFeature === 'Specification') {
+                product.specifications.push(result.valueSpecOrFeature);
+            } else if (result.specOrFeature === 'Feature') {
+                product.features.push(result.valueSpecOrFeature);
+            }
+        });
+       
+        res.status(200).json({ product: product });
+    })
+})
 
 module.exports = router;

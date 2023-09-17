@@ -8,7 +8,7 @@ const fs = require('fs');
 const upload = require('../utils/multerConfig');
 
 // store new product in db
-router.post('/new', upload.array('images', 8), function checkIfProductExists (req, res, next) {
+router.post('/new', upload.array('images', 8), function checkIfProductExists(req, res, next) {
     const newProduct = req.body;
 
     const checkProductQuery = 'SELECT * FROM product WHERE productName = ?';
@@ -26,7 +26,7 @@ router.post('/new', upload.array('images', 8), function checkIfProductExists (re
 
         next();
     });
-}, function insertProductData (req, res, next) {
+}, function insertProductData(req, res, next) {
     const newProduct = req.body;
 
     const productQuery = 'INSERT INTO product (productName, price, description, stock, brand, idCategory, slogan, creationDate) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())';
@@ -51,7 +51,7 @@ router.post('/new', upload.array('images', 8), function checkIfProductExists (re
 
         next();
     });
-}, function insertSpecificationsAndFeatures (req, res, next) {
+}, function insertSpecificationsAndFeatures(req, res, next) {
     const newProduct = req.body;
     const specifications = [];
     const features = [];
@@ -100,7 +100,7 @@ router.post('/new', upload.array('images', 8), function checkIfProductExists (re
         });
     });
 
-}, function handleImages (req, res) {
+}, function handleImages(req, res) {
     const images = req.files;
     const productId = req.productId;
     const productName = req.body.productName;
@@ -129,9 +129,11 @@ router.post('/new', upload.array('images', 8), function checkIfProductExists (re
 
 // get n products with/without sortBy 
 router.get('/list/:id', function (req, res, next) {
-    const idCategory = req.params.id; 
-    const { limit, sortBy, page, pageSize } = req.query;
+    const idCategory = req.params.id;
+    const { sortBy, page, pageSize, isCategory } = req.query;
     const offset = (page - 1) * pageSize;
+    const whereStatement = isCategory == 'true' ? 'idCategory IN (SELECT idCategory FROM categories WHERE idCategoryParent = ?)' : 'p.idCategory = ?'
+    const countStatement = isCategory == 'true' ? 'IN (SELECT idCategory FROM categories WHERE idCategoryParent = ?)' : '= ?';
 
     let sqlQuery = `
     SELECT p.*, 
@@ -139,40 +141,34 @@ router.get('/list/:id', function (req, res, next) {
             FROM images 
             WHERE images.idProduct = p.idProduct) as imageUrls
     FROM product p
-    WHERE p.idCategory = ?`;
+    WHERE ${whereStatement}`;
 
-    switch (sortBy) {
-        case 'New':
-            sqlQuery += ' ORDER BY creationDate DESC'; 
-            break;
-        case 'Old':
-            sqlQuery += ' ORDER BY creationDate ASC'; 
-            break;
-        case 'Brand A-Z':
-            sqlQuery += ' ORDER BY brand ASC'; 
-            break;
-        case 'Brand Z-A':
-            sqlQuery += ' ORDER BY brand DESC'; 
-            break;
-        case 'Price Low to High':
-            sqlQuery += ' ORDER BY price ASC'; 
-            break;
-        case 'Price High to Low':
-            sqlQuery += ' ORDER BY price DESC'; 
-            break;
+    const sortByOptions = {
+        'New': 'creationDate DESC',
+        'Old': 'creationDate ASC',
+        'Brand A-Z': 'brand ASC',
+        'Brand Z-A': 'brand DESC',
+        'Price Low to High': 'price ASC',
+        'Price High to Low': 'price DESC'
+    };
+
+    const orderByClause = sortByOptions[sortBy];
+
+    if (orderByClause) {
+        sqlQuery += ` ORDER BY ${orderByClause}`;
     }
 
-    let countQuery = 'SELECT COUNT(*) as totalCount FROM product WHERE idCategory = ?';
+    let countQuery = `SELECT COUNT(*) as totalCount FROM product WHERE idCategory ${countStatement}`;
 
     db.query(countQuery, [idCategory], (err, countResult) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-    
+
         const totalCount = countResult[0].totalCount;
-    
+
         sqlQuery += ' LIMIT ? OFFSET ?';
-    
+
         db.query(sqlQuery, [idCategory, parseInt(pageSize), offset], (err, results) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
@@ -180,59 +176,14 @@ router.get('/list/:id', function (req, res, next) {
             const productsWithImages = results.map(product => {
                 return {
                     ...product,
-                    imageUrls: product.imageUrls ? product.imageUrls.split(',') : [] 
+                    imageUrls: product.imageUrls ? product.imageUrls.split(',') : []
                 }
             });
-    
+
             const totalPages = Math.ceil(totalCount / pageSize);
-    
+
             res.json({ products: productsWithImages, totalPages });
         });
-    });
-});
-
-
-// get n products of all subcategories from a parent category, with/without sortBy 
-router.get('/list/allSubcategories', function (req, res, next) {
-    const idCategory = req.body.idCategory;
-    const { limit, sortBy } = req.query; 
-
-    let sqlQuery = `
-        SELECT * 
-        FROM product 
-        WHERE idCategory IN (SELECT idCategory FROM categories WHERE idCategoryParent = ?)
-    `;
-
-    switch (sortBy) {
-        case 'new':
-            sqlQuery += ' ORDER BY creationDate DESC'; 
-            break;
-        case 'old':
-            sqlQuery += ' ORDER BY creationDate ASC'; 
-            break;
-        case 'brand_az':
-            sqlQuery += ' ORDER BY brand ASC'; 
-            break;
-        case 'brand_za':
-            sqlQuery += ' ORDER BY brand DESC'; 
-            break;
-        case 'price_asc':
-            sqlQuery += ' ORDER BY price ASC'; 
-            break;
-        case 'price_desc':
-            sqlQuery += ' ORDER BY price DESC'; 
-            break;
-    }
-
-    if (limit) {
-        sqlQuery += ` LIMIT ${parseInt(limit)}`;
-    }
-
-    db.query(sqlQuery, [idCategory], (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ products: results });
     });
 });
 

@@ -85,17 +85,27 @@ router.post('/login', function (req, res, next) {
             }
             delete user.passwordHash
             // res.cookie('sessionId', sessionToken)            
-            req.session.userId = user.idUser;
-            return res.status(200).json(user)
+           req.session.user = user;
+           req.session.isAuthenticated = true;           
+
+           return res.status(200).json(user)
           })
     });
 });
+
+router.get('/status', function (req, res, next) {
+    if (req.session.isAuthenticated) {
+        res.status(200).json({ isAuthenticated: true, user: req.session.user });
+      } else {
+        res.status(200).json({ isAuthenticated: false });
+      }
+})
 
 router.get('/logout', function (req, res) {
     req.session.destroy(function () {
         req.session = null; 
         res.clearCookie('connect.sid');
-        res.status(200).json({message: 'Logged out successfully'});
+        res.status(200).json({message: 'Logged out successfully', isAuthenticated: false});
     });
 });
 

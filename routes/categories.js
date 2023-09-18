@@ -29,7 +29,7 @@ router.get('/all', function (req, res, next) {
         db.query(categoriesQuery, (err, categories) => {
             if (err) {
                 console.error('Query Error: ', err);
-                return res.status(500).send('Query Error');
+                return res.status(400).send('Query Error');
             }
 
             const response = {

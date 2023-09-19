@@ -24,29 +24,51 @@ router.get('/:id', function (req, res, next) {
       return res.status(400).json({ errMessage: 'Query Error' })
     }
     if (result.length === 0) {
-      return res.status(409).json({ noUserMsg: `The user doesn't exist` })
+      return res.status(409).json({ noUserMsg: `User not found` })
     }
-    return res.status(200).send(result)
+    
+    delete result.passwordHash
+    return res.status(200).json({user: result});
   })
 });
 
-router.patch('/:id', function (req, res, next) {
+router.patch('/:id', function (req, res, next) {  
   const userId = req.params.id;
-  let query = 'UPDATE user SET ?? = ? WHERE idUser = ?';
-  const objKey = Object.keys(req.body)[0]
-  const elems = [objKey, req.body[objKey], userId]
+  const fieldsToUpdate = req.body;
 
-  db.query(query, elems, (err, results) => {
-    if (err) {
-      console.error('Query error:', err);
-      return res.status(500).send(`Query error: ${err}`);
-    }
-    if (results.affectedRows === 0) {
-      return res.status(404).send('User not found :-(');
-    }
-    res.status(200).json({ updatedValue: req.body[objKey] });
+  if (!fieldsToUpdate || Object.keys(fieldsToUpdate).length === 0) {
+    return res.status(400).json({noFields: 'No fields to update'});
+  }
+
+  const updatedValues = {};
+
+  const promises = Object.keys(fieldsToUpdate).map(field => {
+    const query = 'UPDATE user SET ?? = ? WHERE idUser = ?';
+    const elems = [field, fieldsToUpdate[field], userId];
+
+    return new Promise((resolve, reject) => {
+      db.query(query, elems, (err, results) => {
+        if (err) {          
+          reject(err);
+        } else if (results.affectedRows === 0) {
+          reject(new Error('User not found :-('));
+        } else {
+          updatedValues[field] = fieldsToUpdate[field];
+          resolve();
+        }
+      });
+    });
   });
+
+  Promise.all(promises)
+    .then(() => {
+      res.status(200).json({ updatedValues });
+    })
+    .catch(error => {
+      res.status(500).send(`Error: ${error.message}`);
+    });
 });
+
 
 router.delete('/:id', function (req, res, next) {
   const userId = req.params.id;

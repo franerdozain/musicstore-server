@@ -101,4 +101,26 @@ router.delete('/:id', function (req, res, next) {
     })
 })
 
+router.patch('/modify', function (req, res, next) {
+    const userId = req.session.user.idUser; 
+    const {productId, modifyType} = req.body;
+    
+    let query;
+    if (modifyType === 'decrement') {
+        query = `UPDATE cart SET quantity = quantity - 1 WHERE idUser = ? AND idProduct = ?`;
+    } else if (modifyType === 'increment') {
+        query = `UPDATE cart SET quantity = quantity + 1 WHERE idUser = ? AND idProduct = ?`;
+    }
+
+    db.query(query, [userId, productId], function (error, results, fields) {
+        if (error) {            
+            res.status(500).json({ error: 'Internal Server Error' });
+            return;
+        }
+       
+        return res.status(200).json({ quantityModified: true });
+    });
+ 
+})
+
 module.exports = router;

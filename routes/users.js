@@ -82,7 +82,7 @@ router.delete('/:id', function (req, res, next) {
     if (result.affectedRows === 0) {
       return res.status(404).send('User not found :-(');
     }
-    res.status(200).json({ message: `User deleted` })
+    res.status(200).json({ userDeleted: `User deleted` })
 
   })
 });

@@ -7,6 +7,7 @@ const products = require('./products');
 const cart = require('./cart');
 const resetPassword = require('./resetPassword');
 const checkout = require('./checkout');
+const search = require('./search')
 
 router.use('/categories', categories);
 router.use('/products', products);
@@ -15,5 +16,6 @@ router.use('/reset', resetPassword);
 router.use('/users', users);
 router.use('/cart', cart);
 router.use('/checkout', checkout);
+router.use('/search', search);
 
 module.exports = router;

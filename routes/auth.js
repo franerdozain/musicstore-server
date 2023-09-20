@@ -71,7 +71,7 @@ router.post('/login', function (req, res, next) {
         }
 
         if (userResult.length === 0) {
-            return res.status(401).json({ errorInexistentEmail: `The email doesn't exist in our database, create an account by clicking "Create Account"` })
+            return res.status(401).json({ errorInexistentEmail: `The password or the email is incorrect, please check for any typos or create an account by clicking "Create Account"` })
         }
 
         const user = userResult[0];
@@ -81,7 +81,7 @@ router.post('/login', function (req, res, next) {
                 return res.status(401).json({ error: `An error occurred` })                
             }
             if(!result) {               
-                return res.status(401).json({errorWrongPassword: `The password is incorrect`})
+                return res.status(401).json({errorWrongPassword: `The password or the email is incorrect`})
             }
             delete user.passwordHash
             // res.cookie('sessionId', sessionToken)            

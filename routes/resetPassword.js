@@ -19,7 +19,7 @@ router.post('/', function (req, res, next) {
         }
         
         if (userResult.length === 0) {
-            return res.status(401).json({notFound: `The email doesn't exist in our database or has a typo` })
+            return res.status(401).json({notFound: `We can't find your email, please check for any typos or create an account by clicking "Create Account"` })
         }
         
         const user = userResult[0];
@@ -27,13 +27,14 @@ router.post('/', function (req, res, next) {
         const resetLink = `http://localhost:3000/reset/new-password?token=${resetToken}`;
 
         const message = {
-            from: 'emailofmusicstore@gmail.com',
+            from: 'emailofmelodymakers@gmail.com',
             to: user.email,
-            subject: 'Reset Your Password of your Musicstore Account',
+            subject: 'Reset Your Musicstore Account Password',
             html: `
               <p>Hi, ${user.username}</p>
-              <p>Click on the following link to change your password:</p>
+              <p>Click the following link to change your password:</p>
               <a href="${resetLink}">Reset Password</a>
+              <p>It will expire in 1 hour</p>
             `
           };
           
@@ -41,7 +42,7 @@ router.post('/', function (req, res, next) {
             if (error) {
               console.error('Error sending email:', error);
             } else {
-               return res.status(200).json({message: "An email with a link to recover your password was sent to your email account"})
+               return res.status(200).json({message: "An email was sent to you with a link to reset your password. The link will expire in 1 hour."})
             }
           }); 
     })

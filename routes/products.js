@@ -130,17 +130,26 @@ router.post('/new', upload.array('images', 8), function checkIfProductExists(req
 // get n products with/without sortBy 
 router.get('/list/:id', function (req, res, next) {
     const idCategory = req.params.id;
+    const idUser = req.session.user?.idUser;
     const { sortBy, page, pageSize, isCategory } = req.query;
     const offset = (page - 1) * pageSize;
     const whereStatement = isCategory == 'true' ? 'idCategory IN (SELECT idCategory FROM categories WHERE idCategoryParent = ?)' : 'p.idCategory = ?'
     const countStatement = isCategory == 'true' ? 'IN (SELECT idCategory FROM categories WHERE idCategoryParent = ?)' : '= ?';
 
-    let sqlQuery = `
+    let sqlQuery = !idUser ?
+        `
     SELECT p.*, 
            (SELECT GROUP_CONCAT(imageURL) 
             FROM images 
             WHERE images.idProduct = p.idProduct) as imageUrls
     FROM product p
+    WHERE ${whereStatement}` :
+    `SELECT 
+        p.*,
+        (SELECT GROUP_CONCAT(imageURL) FROM images WHERE images.idProduct = p.idProduct) AS imageUrls,
+        CASE WHEN w.idProduct IS NOT NULL THEN 1 ELSE 0 END AS isInWishlist
+    FROM product p
+    LEFT JOIN wishlist w ON p.idProduct = w.idProduct AND w.idUser = ?
     WHERE ${whereStatement}`;
 
     const sortByOptions = {
@@ -159,8 +168,9 @@ router.get('/list/:id', function (req, res, next) {
     }
 
     let countQuery = `SELECT COUNT(*) as totalCount FROM product WHERE idCategory ${countStatement}`;
+    const values = idUser ? [idUser, idCategory] : [idCategory];
 
-    db.query(countQuery, [idCategory], (err, countResult) => {
+    db.query(countQuery, values, (err, countResult) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -168,8 +178,9 @@ router.get('/list/:id', function (req, res, next) {
         const totalCount = countResult[0].totalCount;
 
         sqlQuery += ' LIMIT ? OFFSET ?';
+        const values = idUser ? [idUser, idCategory, parseInt(pageSize), offset] : [idCategory, parseInt(pageSize), offset];
 
-        db.query(sqlQuery, [idCategory, parseInt(pageSize), offset], (err, results) => {
+        db.query(sqlQuery, values, (err, results) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
@@ -190,7 +201,7 @@ router.get('/list/:id', function (req, res, next) {
 // get 1 product details
 router.get('/details/:id', function (req, res, next) {
     console.log("vvvv", req.session.isAuthenticated);
-    
+
     const idProduct = parseInt(req.params.id);
     const productDetailsQuery = `SELECT 
     p.*,
@@ -218,7 +229,7 @@ GROUP BY
         }
 
         const [productData] = results;
-               
+
         const product = {
             idProduct: productData.idProduct,
             productName: productData.productName,
@@ -232,7 +243,7 @@ GROUP BY
             specifications: [],
             features: []
         };
-                
+
         results.forEach(result => {
             if (result.specOrFeature === 'Specification') {
                 product.specifications.push(result.valueSpecOrFeature);
@@ -240,7 +251,7 @@ GROUP BY
                 product.features.push(result.valueSpecOrFeature);
             }
         });
-       
+
         res.status(200).json({ product: product });
     })
 })

@@ -46,7 +46,7 @@ router.get('/', function (req, res, next) {
                 return res.status(500).json({ errInternal: 'A server error happened :-( try again in a moment please' });
             }
 
-            const uniqueProducts = {}; // Usamos un objeto para evitar duplicados por idProduct
+            const uniqueProducts = {}; 
 
             productResults.forEach(product => {
                 const { idProduct, productName, price, description, stock, brand, idSupplier, idCategory, slogan, creationDate, imageURL } = product;

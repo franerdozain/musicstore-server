@@ -54,6 +54,7 @@ router.patch('/:id', function (req, res, next) {
           reject(new Error('User not found :-('));
         } else {
           updatedValues[field] = fieldsToUpdate[field];
+          req.session.user[field] = fieldsToUpdate[field];
           resolve();
         }
       });

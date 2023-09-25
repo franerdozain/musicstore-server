@@ -94,7 +94,7 @@ router.post('/login', function (req, res, next) {
 });
 
 router.get('/status', function (req, res, next) {
-    if (req.session.isAuthenticated) {
+    if (req.session.isAuthenticated) {       
         res.status(200).json({ isAuthenticated: true, user: req.session.user });
       } else {
         res.status(200).json({ isAuthenticated: false });

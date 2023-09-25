@@ -10,6 +10,7 @@ const checkout = require('./checkout');
 const search = require('./search');
 const wishlist = require('./wishlist');
 const orders = require('./orders');
+const messages = require('./messages');
 
 router.use('/categories', categories);
 router.use('/products', products);
@@ -21,6 +22,6 @@ router.use('/checkout', checkout);
 router.use('/search', search);
 router.use('/wishlist', wishlist);
 router.use('/orders', orders);
-
+router.use('/messages', messages);
 
 module.exports = router;

@@ -4,10 +4,11 @@ const router = express.Router();
 const db = require('../db');
 const Mailgun = require('mailgun-js');
 const apiKey = process.env.MAILGUN_API_KEY; 
-const domain = 'sandboxeff597fa47714e8da2bf76b6fcee4028.mailgun.org'; 
+const domain = process.env.MAILGUN_DOMAIN; 
 const mailgun = new Mailgun({ apiKey, domain });
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET_KEY;
+const resetLink = process.env.RESET_LINK;
 const bcrypt = require('bcrypt');
 
 router.post('/', function (req, res, next) {
@@ -23,18 +24,17 @@ router.post('/', function (req, res, next) {
         }
         
         const user = userResult[0];
-        const resetToken = jwt.sign({ email: user.email }, secretKey, { expiresIn: '1h' });
-        const resetLink = `http://localhost:3000/reset/new-password?token=${resetToken}`;
+        const resetToken = jwt.sign({ email: user.email }, secretKey, { expiresIn: '1h' });       
 
         const message = {
             from: 'emailofmelodymakers@gmail.com',
             to: user.email,
-            subject: 'Reset Your Musicstore Account Password',
+            subject: 'Reset Your Melody Makers Account Password',
             html: `
               <p>Hi, ${user.username}</p>
               <p>Click the following link to change your password:</p>
-              <a href="${resetLink}">Reset Password</a>
-              <p>It will expire in 1 hour</p>
+              <a href="${resetLink}${resetToken}">Reset Password</a>
+              <p>The link will expire in 1 hour</p>
             `
           };
           

@@ -131,12 +131,40 @@ router.post('/new', upload.array('images', 8), function checkIfProductExists(req
 router.get('/list/:id', function (req, res, next) {
     const idCategory = req.params.id;
     const idUser = req.session.user?.idUser;
-    const { sortBy, page, pageSize, isCategory } = req.query;
+    const { sortBy, page, pageSize, isCategory, term } = req.query;
     const offset = (page - 1) * pageSize;
     const whereStatement = isCategory == 'true' ? 'idCategory IN (SELECT idCategory FROM categories WHERE idCategoryParent = ?)' : 'p.idCategory = ?'
     const countStatement = isCategory == 'true' ? 'IN (SELECT idCategory FROM categories WHERE idCategoryParent = ?)' : '= ?';
 
-    let sqlQuery = !idUser ?
+    if (term !== 'undefined') {
+        const searchQuery = `
+            SELECT p.*, 
+                   (SELECT GROUP_CONCAT(imageURL) 
+                    FROM images 
+                    WHERE images.idProduct = p.idProduct) as imageUrls
+            FROM product p
+            WHERE p.productName LIKE ?`; 
+
+        const values = [`%${term}%`]; 
+
+        db.query(searchQuery, values, (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+
+            const productsWithImages = results.map(product => {
+                return {
+                    ...product,
+                    imageUrls: product.imageUrls ? product.imageUrls.split(',') : []
+                }
+            });
+            const totalCount = productsWithImages.length; 
+
+            const totalPages = Math.ceil(totalCount / pageSize); 
+            res.json({ products: productsWithImages, totalPages });
+        });
+    } else {
+        let sqlQuery = !idUser ?
         `
     SELECT p.*, 
            (SELECT GROUP_CONCAT(imageURL) 
@@ -195,7 +223,8 @@ router.get('/list/:id', function (req, res, next) {
 
             res.json({ products: productsWithImages, totalPages });
         });
-    });
+    });   
+    }
 });
 
 // get 1 product details

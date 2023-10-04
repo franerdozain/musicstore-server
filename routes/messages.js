@@ -113,7 +113,7 @@ router.post('/answer', function checkAuthorized(req, res, next) {
     const values = [receiver, idSender, subject, message, dateAndTime];
     db.query(queryNewMsg, values, function (error, results) {
         if (error) {
-            return res.status(500).json({ error: 'An error occurred' });
+            return res.status(500).json({ error: 'Ann error occurred' });
         }
        
         const messageToUsersEmail = {
@@ -125,7 +125,7 @@ router.post('/answer', function checkAuthorized(req, res, next) {
     
         mailgun.messages().send(messageToUsersEmail, (error, body) => {
             if (error) {
-                res.status(500).json({errorEmail: "There's was an error sending the email."});
+                res.status(500).json({errorEmail: "The message has been successfully placed in the profile's message section. However, there was an issue while attempting to send the accompanying email."});
               } else {
                 return res.status(200).json({messageOk:"The response was sent by email and to the user's messages section."})
               }

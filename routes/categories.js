@@ -144,12 +144,12 @@ router.delete('/:id', function (req, res, next) {
     db.query(query, [categoryIdToDelete], (err, results) => {
         if (err) {
             console.error('Query error:', err);
-            return res.status(500).send(`Query error: ${err}`);
+            return res.status(500).json({errorDeleting: `Can't delete a category that has subcategories, delete first each subcategory`});
         }
         if (results.affectedRows === 0) {
-            res.status(404).send('Category not found :-(');
+            res.status(404).json({errorDeleting: 'Category not found :-('});
         }
-        res.status(202).send('Category deleted from Database');
+        res.status(202).json({deletedOk: 'Deleted from database'});
     });
 });
 

@@ -229,7 +229,6 @@ router.get('/list/:id', function (req, res, next) {
 
 // get 1 product details
 router.get('/details/:id', function (req, res, next) {
-    console.log("vvvv", req.session.isAuthenticated);
 
     const idProduct = parseInt(req.params.id);
     const productDetailsQuery = `SELECT 
@@ -282,6 +281,19 @@ GROUP BY
         });
 
         res.status(200).json({ product: product });
+    })
+})
+
+router.get('/listModify/:id', function (req, res) {
+    const idCategory = req.params.id;
+    const queryListProducts = 'SELECT productName, idProduct FROM product WHERE idCategory = ?';
+
+    db.query(queryListProducts, [idCategory], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        } 
+       
+        res.status(200).json({ products: results });
     })
 })
 

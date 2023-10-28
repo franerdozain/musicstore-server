@@ -15,7 +15,7 @@ router.get('/:idUser?', function (req, res, next) {
         }
 
         if (results.length === 0) {
-            return res.status(400).json({ emptyWishlist: `No orders yet` });
+            return res.status(400).json({ emptyOrders: `No orders yet` });
         }
 
         return res.status(200).json({ orders: results });

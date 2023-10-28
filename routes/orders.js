@@ -5,8 +5,8 @@ const sessionToken = require('../session');
 const path = require('path');
 const fs = require('fs');
 
-router.get('/', function (req, res, next) {
-    const idUser = req.session.user.idUser;
+router.get('/:idUser?', function (req, res, next) {
+    const idUser = req.params.idUser || req.session.user.idUser;
     const queryGetOrders = 'SELECT o.*, p.productName FROM orders o JOIN product p ON o.idProduct = p.idProduct WHERE o.idUser = ?';
 
     db.query(queryGetOrders, [idUser], (err, results) => {
